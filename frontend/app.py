@@ -1,6 +1,8 @@
 import uuid
-import requests
 import streamlit as st
+
+from backend.agent import chat_turn
+from backend.models import ConversationState
 
 
 st.set_page_config(
@@ -18,9 +20,11 @@ if "session_id" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "agent_state" not in st.session_state:
+    st.session_state.agent_state = ConversationState()
+
 
 for message in st.session_state.messages:
-
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
@@ -44,20 +48,15 @@ if user_input:
 
     try:
 
-        response = requests.post(
-            "http://backend:8000/chat",
-            json={
-                "session_id": st.session_state.session_id,
-                "message": user_input
-            }
+        bot_response = chat_turn(
+            user_input,
+            st.session_state.agent_state
         )
-
-        bot_response = response.json()["response"]
 
     except Exception as e:
 
         bot_response = (
-            f"Backend connection error: {e}"
+            f"Agent Error: {str(e)}"
         )
 
     st.session_state.messages.append(
@@ -69,4 +68,3 @@ if user_input:
 
     with st.chat_message("assistant"):
         st.markdown(bot_response)
-
